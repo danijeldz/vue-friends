@@ -14,6 +14,7 @@
         <label for="nickname">Nickname:</label>
         <input type="text" name="nickname" v-model="nickname" />
       </div>
+      <p v-if="feedback" class="red-text">{{ feedback }}</p>
       <div class="field center">
         <button class="btn-large deep-purple">Signup</button>
       </div>
@@ -22,14 +23,51 @@
 </template>
 
 <script>
+import slugify from "slugify";
+import db from "@/firebase/init";
+import firebase from "firebase";
+
 export default {
   name: "Signup",
   data() {
     return {
       email: null,
       password: null,
-      nickname: null
+      nickname: null,
+      feedback: null,
+      slug: null
     };
+  },
+  methods: {
+    signup() {
+      if (this.nickname && this.email && this.password) {
+        this.slug = slugify(this.nickname, {
+          replacement: "-",
+          remove: /[$*_+~.()'"!\-:@]/g,
+          lower: true
+        });
+        let ref = db.collection("users").doc(this.slug);
+        ref.get().then(doc => {
+          if (doc.exists) {
+            this.feedback = "This nickname is alreade taken!";
+          } else {
+            firebase
+              .auth()
+              .createUserWithEmailAndPassword(this.email, this.password)
+              .catch(err => {
+                console.log(err);
+                this.feedback = err.message;
+              });
+            this.feedback = "This nickname is available to use";
+          }
+        });
+
+        console.log(this.slug);
+        this.feedback = null;
+      } else {
+        this.feedback = "You must enter all fields.";
+      }
+    }
   }
 };
 </script>
