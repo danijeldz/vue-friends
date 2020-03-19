@@ -9,8 +9,8 @@ export default {
   name: "GMap",
   data() {
     return {
-      lat: 53,
-      lng: -2
+      lat: 48,
+      lng: 16
     };
   },
   methods: {
