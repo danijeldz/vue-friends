@@ -26,6 +26,7 @@
 import slugify from "slugify";
 import db from "@/firebase/init";
 import firebase from "firebase";
+import functions from "firebase/functions";
 
 export default {
   name: "Signup",
@@ -46,9 +47,11 @@ export default {
           remove: /[$*_+~.()'"!\-:@]/g,
           lower: true
         });
-        let ref = db.collection("users").doc(this.slug);
-        ref.get().then(doc => {
-          if (doc.exists) {
+        let checkNickname = firebase.functions().httpsCallable("checkNickname");
+        checkNickname({
+          slug: this.slug
+        }).then(result => {
+          if (!result.data.unique) {
             this.feedback = "This nickname is alreade taken!";
           } else {
             firebase
@@ -56,11 +59,13 @@ export default {
               .createUserWithEmailAndPassword(this.email, this.password)
               .then(cred => {
                 console.log(cred.uid);
-                ref.set({
-                  nickname: this.nickname,
-                  geolocation: null,
-                  user_id: cred.user.uid
-                });
+                db.collection("users")
+                  .doc(this.slug)
+                  .set({
+                    nickname: this.nickname,
+                    geolocation: null,
+                    user_id: cred.user.uid
+                  });
               })
               .then(() => {
                 this.$router.push({ name: "GMap" });
